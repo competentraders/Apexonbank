@@ -277,7 +277,27 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+    // Import all necessary Firebase modules together
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBy7h0TDPepRx8xzzyLLN5jb0DJlcZJfd0",
+        authDomain: "apexonbank.firebaseapp.com",
+        projectId: "apexonbank",
+        storageBucket: "apexonbank.firebasestorage.app",
+        messagingSenderId: "1056633660208",
+        appId: "1:1056633660208:web:5807091c804b5a423d5ef5",
+        measurementId: "G-QY18F2VJVJ"
+    };
+
+    // Initialize Firebase Core Services
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
     (function() {
         var countryMatrix = [
             { name: "Afghanistan", flag: "🇦🇫", continent: "Asia", curCode: "AFN", curSym: "؋" },
@@ -484,36 +504,30 @@
 
             if (!isValid) return;
 
-            // --- 3. UPDATED: CLOUD FIRESTORE DUPLICATION VERIFICATION ---
-            if (window.db && window.dbRefs) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = "Validating Node System...";
+            // --- 3. CLOUD FIRESTORE DUPLICATION VERIFICATION ---
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Validating Node System...";
+            
+            try {
+                // Check if the document with this username exists in the 'users' collection
+                const userDocRef = doc(db, "users", usernameInp);
+                const userCheck = await getDoc(userDocRef);
                 
-                try {
-                    const { doc, getDoc } = window.dbRefs;
-                    // Check if the document with this username exists in the 'users' collection
-                    const userDocRef = doc(window.db, "users", usernameInp);
-                    const userCheck = await getDoc(userDocRef);
-                    
-                    if (userCheck.exists()) {
-                        usernameError.style.display = 'block';
-                        isValid = false;
-                    }
-                } catch (err) {
-                    console.error("Firestore structural verification error: ", err);
+                if (userCheck.exists()) {
+                    usernameError.style.display = 'block';
+                    isValid = false;
                 }
-
-                if (!isValid) {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = "ApexonBank Submit";
-                    return;
-                }
+            } catch (err) {
+                console.error("Firestore structural verification error: ", err);
             }
 
+            if (!isValid) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "ApexonBank Submit";
+                return;
+            }
 
-
-
-                    // --- 4. DATA BUILD AND SAVING ---
+            // --- 4. DATA BUILD AND SAVING ---
             var nationalityValue = document.getElementById('nationality').value;
             var cleanCountryName = nationalityValue.replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]\s*/g, "").split(" (")[0].trim();
 
@@ -545,36 +559,40 @@
                 createdDate: new Date().toLocaleDateString()
             };
 
-            // Process local cache fallback
-            currentUsers.push(newUserObject);
-            localStorage.setItem('apexon_users', JSON.stringify(currentUsers));
+            // --- 5. EXECUTE AUTHENTICATION CREATION & FIRESTORE SAVE ---
+            try {
+                submitBtn.textContent = "Creating Account Securely...";
+                
+                // A. Create the official user account record inside Firebase Authentication portal
+                const userCredential = await createUserWithEmailAndPassword(auth, emailInp, passwordInp);
+                const user = userCredential.user;
+                
+                // Bind Authentication reference directly inside the data payload object
+                newUserObject.authUid = user.uid;
 
-            // Process cloud sync update directly to Firestore collection
-            if (window.db && window.dbRefs) {
-                const { doc, setDoc } = window.dbRefs;
-                try {
-                    // Saves user object inside 'users' collection with the unique username as the Doc ID
-                    await setDoc(doc(window.db, "users", usernameInp), newUserObject);
-                } catch (firebaseErr) {
-                    console.error("Critical identity drop sync failure to Firestore Architecture: ", firebaseErr);
-                    alert("Registration sync failed. Check configurations.");
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = "ApexonBank Submit";
-                    return;
-                }
+                // B. Write the fully finalized data payload model document to Cloud Firestore 
+                await setDoc(doc(db, "users", usernameInp), newUserObject);
+
+                // Process local cache uniform fallback injection
+                currentUsers.push(newUserObject);
+                localStorage.setItem('apexon_users', JSON.stringify(currentUsers));
+
+                // Reset UI components and throw custom modal view
+                submitBtn.disabled = false;
+                submitBtn.textContent = "ApexonBank Submit";
+                modal.classList.add('active');
+
+            } catch (firebaseErr) {
+                console.error("Critical identity drop sync failure to Firebase Architecture: ", firebaseErr);
+                alert("Registration sync failed: " + firebaseErr.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = "ApexonBank Submit";
+                return;
             }
-
-            // Reset UI components and throw custom modal view
-            submitBtn.disabled = false;
-            submitBtn.textContent = "ApexonBank Submit";
-            modal.classList.add('active');
         });
 
         modalBtn.addEventListener('click', function() {
             window.location.href = "login.html";
         });
     })();
-    </script>
-
-</body>
-</html>
+</script>
