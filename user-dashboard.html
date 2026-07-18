@@ -346,8 +346,13 @@
         if (!liveUserData) return;
 
         var rawFullName = liveUserData.fullName || "Valued Customer";
-        var rawBalance = liveUserData.balance || "0.00";
+
+
+     var rawBalance = liveUserData.accountBalance || liveUserData.balance || "0.00";
+
         
+
+
         // --- FIXED LINE: Looks for the exact property name matching your database schema ---
         var rawAccountNo = liveUserData.accountNumber || liveUserData.accountNo || "Unavailable";
         
