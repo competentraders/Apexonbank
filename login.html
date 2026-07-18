@@ -5,52 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Apexon Bank | Secure Login Gateway</title>
     
+    <!-- PWA MANIFEST LINK -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<!-- PWA MANIFEST LINK -->
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- FIREBASE CONFIGURATION MODULE -->
+    <script type="module">
+      import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+      import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
+      const firebaseConfig = {
+        apiKey: "AIzaSyBy7h0TDPepRx8xzzyLLN5jb0DJlcZJfd0",
+        authDomain: "apexonbank.firebaseapp.com",
+        projectId: "apexonbank",
+        storageBucket: "apexonbank.firebasestorage.app",
+        messagingSenderId: "1056633660208",
+        appId: "1:1056633660208:web:5807091c804b5a423d5ef5",
+        measurementId: "G-QY18F2VJVJ"
+      };
 
+      // Initialize Firebase globally on the window object so our bottom forms can see it
+      const app = initializeApp(firebaseConfig);
+      window.db = getDatabase(app);
+      window.dbRefs = { ref, set, get, child };
+    </script>
 
-
-
-<!-- FIREBASE CONFIGURATION MODULE -->
-<script type="module">
-  import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBy7h0TDPepRx8xzzyLLN5jb0DJlcZJfd0",
-    authDomain: "apexonbank.firebaseapp.com",
-    projectId: "apexonbank",
-    storageBucket: "apexonbank.firebasestorage.app",
-    messagingSenderId: "1056633660208",
-    appId: "1:1056633660208:web:5807091c804b5a423d5ef5",
-    measurementId: "G-QY18F2VJVJ"
-  };
-
-  // Initialize Firebase globally on the window object so our bottom forms can see it
-  const app = initializeApp(firebaseConfig);
-  window.db = getDatabase(app);
-  window.dbRefs = { ref, set, get, child };
-</script>
-
-
-
-<!-- In your HTML head -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Keep the file name as sw.js, just use '/sw.js' here so the browser knows to look in the root folder!
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(reg => console.log('Registered with scope:', reg.scope))
-        .catch(err => console.log('Registration failed:', err));
-    });
-  }
-</script>
-
-
+    <!-- Service Worker script -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => console.log('Registered with scope:', reg.scope))
+            .catch(err => console.log('Registration failed:', err));
+        });
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -240,7 +230,6 @@
             var identity = document.getElementById('loginIdentity').value.trim().toLowerCase();
             var password = document.getElementById('loginPassword').value;
             
-            // Bring in the modular references from our window object up top
             var db = window.db;
             var dbRefs = window.dbRefs;
 
@@ -250,18 +239,24 @@
                 return;
             }
 
-            // Retrieve the users node from the global cloud database
+            // Fetch the 'users' node from your Realtime Database
             dbRefs.get(dbRefs.ref(db, 'users')).then(function(snapshot) {
                 var usersData = snapshot.val() || {};
                 var foundUser = null;
 
-                // Loop through the users object to find a match
+                // Loop through all properties inside the users node safely
                 for (var key in usersData) {
-                    var u = usersData[key];
-                    if ((u.username.toLowerCase() === identity || u.email.toLowerCase() === identity) && 
-                        u.password === password) {
-                        foundUser = u;
-                        break;
+                    if (usersData.hasOwnProperty(key)) {
+                        var u = usersData[key];
+                        
+                        // Safety fallback checks just in case a record doesn't have these fields filled out yet
+                        var dbUsername = u.username ? u.username.toLowerCase() : "";
+                        var dbEmail = u.email ? u.email.toLowerCase() : "";
+                        
+                        if ((dbUsername === identity || dbEmail === identity) && u.password === password) {
+                            foundUser = u;
+                            break;
+                        }
                     }
                 }
 
@@ -273,7 +268,7 @@
                         return;
                     }
 
-                    // Save session data to keep the private dashboard working locally
+                    // Store user data locally to maintain dashboard states
                     localStorage.setItem('apexon_current_session', JSON.stringify(foundUser));
                     loginBox.style.display = 'none';
                     overlay.classList.add('active');
