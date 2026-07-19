@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apexon Bank | Deposit</title>
+    <title>Apexon Bank | Deposit Node Center</title>
     
 
 <!-- PWA MANIFEST LINK -->
@@ -251,18 +251,18 @@
 
     <header>
         <a href="user-dashboard.html" style="text-decoration: none; color: #b38728; font-size: 22px; font-weight: bold; padding-right: 15px;">←</a>
-        <div class="logo">Apexon</div>
+        <div class="logo">Apexon Vault Node</div>
         <div style="width: 22px;"></div>
     </header>
 
     <!-- LIVE SESSION HEADER INFRASTRUCTURE -->
     <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; padding: 24px 20px; border-bottom: 3px solid #b38728; display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Current Vault</p>
+            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Current Vault Ledger</p>
             <h2 style="font-size: 22px; font-weight: 700; margin-top: 2px; color: #ffffff;" id="liveBalanceDisplay">...</h2>
         </div>
         <div style="text-align: right;">
-            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Inbound</p>
+            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Inbound Gateway</p>
             <span style="background: rgba(179, 135, 40, 0.2); color: #FCF6BA; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; border: 1px solid #b38728; display: inline-block; margin-top: 4px;" id="channelIndicator">Check Capture</span>
         </div>
     </div>
@@ -297,17 +297,17 @@
             <div class="input-group">
                 <label for="depositAmount">💰 Inbound Value (<span id="currencySymbol"></span>)</label>
                 <input type="number" step="0.01" min="0.01" id="depositAmount" placeholder="0.00" required>
-                <div class="error-msg" id="amountError">Please specify a positive funding.</div>
+                <div class="error-msg" id="amountError">Please specify a positive funding vector allocation.</div>
             </div>
 
             <!-- Memo Narration -->
             <div class="input-group">
-                <label for="narration">📝Description</label>
+                <label for="narration">📝 Allocation Memo / Description</label>
                 <textarea id="narration" rows="2" placeholder="Purpose of inbound allocation (Optional)"></textarea>
             </div>
 
             <button type="submit" class="action-btn">
-                ApexonBank Deposit 
+                Transmit Clearing Request
             </button>
         </form>
     </div>
@@ -342,13 +342,14 @@
             <div style="font-size: 48px; margin-bottom: 14px;" id="modalIcon">⏳</div>
             <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px;" id="modalTitle">Processing</h2>
             <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;" id="modalBody">
-                Please wait......
+                Interfacing with automated clearing house data gateways...
             </p>
             <button id="modalCloseBtn" style="width: 100%; padding: 12px; background: #b38728; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; display: none;">
                 Return to Dashboard
             </button>
         </div>
     </div>
+
     <script>
         var activeRoute = 'check';
         var liveUserIndex = -1;
@@ -435,18 +436,18 @@
             var mBtn = document.getElementById('modalCloseBtn');
             var mIcon = document.getElementById('modalIcon');
 
-            // Open processing window overlay
             modal.classList.add('active');
-            mIcon.innerText = "⏳";
-            mTitle.innerText = "Connecting Gateway";
-            mBody.innerText = "Interfacing with automated clearing house data networks...";
 
             setTimeout(function() {
-                mTitle.innerText = "Routing Payload";
-                mBody.innerText = "Transmitting core transaction details to the verification desk for manual clearance checks...";
+                mTitle.innerText = "Clearing Funds";
+                mBody.innerText = "Verifying imaging data and completing automated clearing house handshakes...";
                 
                 setTimeout(function() {
-                    // Generate systemic transaction parameters
+                    var currentBalance = parseFloat(liveUserData.balance || 0);
+                    var runningBalance = currentBalance + amountInp;
+                    
+                    usersArray[liveUserIndex].balance = runningBalance.toFixed(2);
+
                     var d = new Date();
                     var dateStr = d.toISOString().split('T')[0];
                     var timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -458,41 +459,38 @@
                     var sourceTitle = document.getElementById('sourceName').value;
                     var referenceInfo = document.getElementById('referenceValue').value;
                     var descriptionMemo = document.getElementById('narration').value || (activeRoute === 'check' ? "Mobile Check Scan" : "Inbound Wire Deposit");
-                    var generatedTrackingID = "DEP-" + Math.floor(Math.random() * 899999 + 100000);
 
-                    // Add structured object directly into database engine stack
+                    // unshift puts the newest transactions perfectly at the top of the history feed
                     usersArray[liveUserIndex].transactions.unshift({
-                        description: "Deposit: " + descriptionMemo,
+                        description: descriptionMemo,
                         sender: sourceTitle + " (" + referenceInfo + ")",
                         receiver: usersArray[liveUserIndex].fullName,
                         amount: amountInp.toFixed(2),
                         type: "credit",
                         date: dateStr,
                         time: timeStr,
-                        status: "Pending Approval",
-                        channel: activeRoute === 'check' ? "Check Image Capture" : "Inbound Bank Wire"
+                        status: "Successful ✅"
                     });
 
-                    // Save data updates back to disk strings
                     localStorage.setItem('apexon_users', JSON.stringify(usersArray));
 
-                    // Transition UI cleanly into Success Waiting State
-                    mIcon.innerText = "📩";
-                    mTitle.innerText = "Request Logged";
-                    mBody.innerHTML = "Your clearing request has been safely filed into our system records.<br><br>Funds will instantly reflect across your available ledger balances as soon as an administrator confirms background validation parameters.<br><br><strong>Tracking Identifier:</strong> " + generatedTrackingID;
-                    
-                    mBtn.innerText = "Return to Dashboard";
-                    mBtn.style.display = "block";
-                    mBtn.onclick = function() {
-                        window.location.href = "user-dashboard.html";
-                    };
+                    var symbol = liveUserData.currency || "$";
+                    document.getElementById('liveBalanceDisplay').innerText = symbol + runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
+                    mIcon.innerText = "✅";
+                    mTitle.innerText = "Deposit Successful";
+                    mBody.innerHTML = "Your fund capture gateway confirmed settlement. The assets have been posted directly into your ledger node.<br><br><strong>Tracking ID:</strong> DEP-" + Math.floor(Math.random()*899999+100000);
+                    mBtn.style.display = "block";
                 }, 2000);
+
             }, 1500);
+        });
+
+        document.getElementById('modalCloseBtn').addEventListener('click', function() {
+            window.location.href = "user-dashboard.html";
         });
 
         initDepositGateway();
     </script>
-
 </body>
 </html>
