@@ -333,19 +333,14 @@
                 return;
             }
 
-            // SMART RESOLVER: Pull down data by trying Email first, then fallback to UID names automatically
-            db.collection("users").doc(user.email).onSnapshot((doc) => {
-                if (doc.exists) {
+            // FIXED RESOLVER: Query the collection directly for the document matching your authenticated UID field
+            db.collection("users").where("authUid", "==", user.uid).onSnapshot((querySnapshot) => {
+                if (!querySnapshot.empty) {
+                    // Grab the first matching document (e.g., "Oreva")
+                    var doc = querySnapshot.docs[0];
                     renderDashboardUI(doc.data());
                 } else {
-                    // Fallback structural check for UID based schemas
-                    db.collection("users").doc(user.uid).onSnapshot((subDoc) => {
-                        if (subDoc.exists) {
-                            renderDashboardUI(subDoc.data());
-                        } else {
-                            console.error("Profile missing on both email and UID lookups.");
-                        }
-                    });
+                    console.error("No user document found matching this authUid:", user.uid);
                 }
             }, (error) => {
                 console.error("Firestore initialization listener exception:", error);
