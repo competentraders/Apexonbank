@@ -5,25 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Apexon Bank | Secure Login Gateway</title>
     
+    <!-- PWA MANIFEST LINK -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<!-- PWA MANIFEST LINK -->
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<!-- In your HTML head -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Keep the file name as sw.js, just use '/sw.js' here so the browser knows to look in the root folder!
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(reg => console.log('Registered with scope:', reg.scope))
-        .catch(err => console.log('Registration failed:', err));
-    });
-  }
-</script>
-
-
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => console.log('Registered with scope:', reg.scope))
+            .catch(err => console.log('Registration failed:', err));
+        });
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -199,6 +194,7 @@
         </div>
     </div>
 
+    <!-- 1. BACKEND FORM EXECUTION SCRIPT -->
     <script>
     (function() {
         var form = document.getElementById('loginForm');
@@ -206,41 +202,104 @@
         var loginBox = document.getElementById('loginBox');
         var errorMsg = document.getElementById('errorMsg');
 
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
             errorMsg.style.display = 'none';
             
-            var identity = document.getElementById('loginIdentity').value.trim().toLowerCase();
+            // Safety confirmation to ensure Firebase layer is connected
+            if (!window.db) {
+                alert("Establishing link with core database engine. Please submit again in a moment.");
+                return;
+            }
+
+            const { collection, query, where, getDocs } = window.firestoreUtils;
+            const db = window.db;
+
+            var identity = document.getElementById('loginIdentity').value.trim();
+            var identityLower = identity.toLowerCase();
             var password = document.getElementById('loginPassword').value;
-            
-            var users = JSON.parse(localStorage.getItem('apexon_users')) || [];
 
-            var user = users.find(function(u) {
-                return (u.username.toLowerCase() === identity || u.email.toLowerCase() === identity) && 
-                       u.password === password;
-            });
+            try {
+                // Look for the user matching either username or email in Firestore
+                let targetUser = null;
 
-            if (user) {
-                // EXPLICIT REQUIREMENT: Check if admin has set approved status to true
-                if (user.approved !== true) {
-                    errorMsg.innerHTML = "❌ Your account is pending administrator approval.";
-                    errorMsg.style.display = 'block';
-                    return;
+                // 1. Check Username Field Match
+                const usernameQuery = query(collection(db, "users"), where("username", "==", identity));
+                const usernameSnap = await getDocs(usernameQuery);
+
+                if (!usernameSnap.empty) {
+                    let docData = usernameSnap.docs[0].data();
+                    if (docData.password === password) {
+                        targetUser = docData;
+                    }
                 }
 
-                localStorage.setItem('apexon_current_session', JSON.stringify(user));
-                loginBox.style.display = 'none';
-                overlay.classList.add('active');
+                // 2. If no match yet, Check Email Field Match
+                if (!targetUser) {
+                    const emailQuery = query(collection(db, "users"), where("email", "==", identityLower));
+                    const emailSnap = await getDocs(emailQuery);
+                    
+                    if (!emailSnap.empty) {
+                        let docData = emailSnap.docs[0].data();
+                        if (docData.password === password) {
+                            targetUser = docData;
+                        }
+                    }
+                }
 
-                setTimeout(function() {
-                    window.location.href = "user-dashboard.html";
-                }, 5000);
-            } else {
-                errorMsg.innerHTML = "❌ Invalid credentials or node mismatch.";
+                // Evaluation logic 
+                if (targetUser) {
+                    // Check if administrator has transitioned account status out of 'Pending Approval'
+                    if (targetUser.status !== 'Approved' && targetUser.approved !== true) {
+                        errorMsg.innerHTML = "❌ Your account is pending administrator approval.";
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+
+                    // Store details in local session for dashboard populating
+                    localStorage.setItem('apexon_current_session', JSON.stringify(targetUser));
+                    
+                    loginBox.style.display = 'none';
+                    overlay.classList.add('active');
+
+                    setTimeout(function() {
+                        window.location.href = "user-dashboard.html";
+                    }, 5000);
+                } else {
+                    errorMsg.innerHTML = "❌ Invalid credentials or node mismatch.";
+                    errorMsg.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error("Authentication Exception:", error);
+                errorMsg.innerHTML = "❌ Network connection error: " + error.message;
                 errorMsg.style.display = 'block';
             }
         });
     })();
+    </script>
+
+    <!-- 2. FIREBASE CORE INITIALIZATION MODULE -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAMIBJ3RPL3O7VuiZHcZ8o9IdIIbnY8iGs",
+        authDomain: "apxbnk.firebaseapp.com",
+        projectId: "apxbnk",
+        storageBucket: "apxbnk.firebasestorage.app",
+        messagingSenderId: "568114352915",
+        appId: "1:568114352915:web:e3714bad7241a13bc5c0e6",
+        measurementId: "G-R8C9N48RMX"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Pass tools cleanly to window scope for synchronous module coordination
+      window.db = db;
+      window.firestoreUtils = { collection, query, where, getDocs };
     </script>
 </body>
 </html>
