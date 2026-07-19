@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apexon Bank | Capital Credit Desk</title>
+    <title>Apexon Bank | Capital Credit</title>
     
 
 
@@ -407,11 +407,11 @@
 
     <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; padding: 24px 20px; border-bottom: 3px solid #b38728; display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Ledger Balance</p>
+            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Balance</p>
             <h2 style="font-size: 22px; font-weight: 700; margin-top: 2px; color: #ffffff;" id="liveBalanceDisplay">...</h2>
         </div>
         <div style="text-align: right;">
-            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Credit Line</p>
+            <p style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;">Credit</p>
             <span style="background: rgba(179, 135, 40, 0.2); color: #FCF6BA; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; border: 1px solid #b38728; display: inline-block; margin-top: 4px;">Instant Draw</span>
         </div>
     </div>
@@ -501,7 +501,7 @@
     <div class="modal-overlay" id="loanModal">
         <div class="modal-card" style="text-align: left;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h2 style="font-size: 16px; font-weight: 700; color: #0f172a;" id="deskTitle">Lending Terminal</h2>
+                <h2 style="font-size: 16px; font-weight: 700; color: #0f172a;" id="deskTitle">Lending</h2>
                 <span id="closeModalBtn" style="cursor: pointer; font-size: 20px; font-weight: bold; color: #94a3b8;" onclick="closeLendingDesk()">&times;</span>
             </div>
 
@@ -568,7 +568,7 @@
                 </div>
 
                 <p style="font-size: 12px; color: #64748b; line-height: 1.4; margin-bottom: 16px;">
-                    By submitting, you authorize ApexonBank Capital Risk engines to instantly evaluate credit risk headers.
+                    By submitting, you authorize ApexonBank to instantly evaluate credit.
                 </p>
                 <button type="button" class="action-btn" style="background: linear-gradient(135deg, #b38728 0%, #855b18 100%); color: #ffffff;" onclick="submitFinalLoanRequest()">ApexonBank Grant Loan</button>
             </div>
@@ -749,7 +749,7 @@
 
                 usersArray[liveUserIndex].transactions.unshift({
                     description: "Capital Disbursed: " + selectedTierName + " (" + selectedMonths + " Months Amortization)",
-                    sender: "Apexon Liquidity Underwriting Node",
+                    sender: "Apexon Liquidity Underwriting ",
                     receiver: liveUserData.fullName,
                     amount: finalDrawValue.toFixed(2),
                     type: "credit",
