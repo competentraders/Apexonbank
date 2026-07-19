@@ -3,28 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Apexon Bank | Clearing Matrix Dashboard</title>
+    <title>Apexon Bank Dashboard</title>
     <!-- PWA MANIFEST LINK -->
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<!-- In your HTML head -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Keep the file name as sw.js, just use '/sw.js' here so the browser knows to look in the root folder!
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(reg => console.log('Registered with scope:', reg.scope))
-        .catch(err => console.log('Registration failed:', err));
-    });
-  }
-</script>
-
-
-
-
-
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => console.log('Registered with scope:', reg.scope))
+            .catch(err => console.log('Registration failed:', err));
+        });
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -315,7 +308,6 @@
     </div>
 
     <script>
-    // Paste this at the start of your script blocks on ALL pages to keep sync:
     function applyGlobalSettings() {
         var config = JSON.parse(localStorage.getItem('apexon_global_config')) || { darkMode: false, hideBalance: false };
         if (config.darkMode) {
@@ -328,7 +320,6 @@
     applyGlobalSettings();
 
     function syncLiveDashboard() {
-        // Run config checks inside the interval so changes take effect in real time
         var config = applyGlobalSettings();
 
         var currentSession = JSON.parse(localStorage.getItem('apexon_current_session'));
@@ -338,29 +329,41 @@
         }
 
         var users = JSON.parse(localStorage.getItem('apexon_users')) || [];
-        var liveUserData = users.find(u => u.username === currentSession.username);
+        var userIndex = users.findIndex(u => u.username === currentSession.username);
 
-        if (!liveUserData) return;
+        if (userIndex === -1) return;
+        var liveUserData = users[userIndex];
+
+        /* --- ACCOUNT NUMBER AUTO-GENERATION FALLBACK --- */
+        // Checks if the user does not have an account number assigned yet
+        if (!liveUserData.accountNo || liveUserData.accountNo === "Unavailable" || liveUserData.accountNo === "0000000000") {
+            // Generates a random 10 digit number starting with '10'
+            var generatedAccountNo = "10" + Math.floor(10000000 + Math.random() * 90000000);
+            
+            // Updates database array
+            liveUserData.accountNo = generatedAccountNo;
+            users[userIndex] = liveUserData;
+            
+            // Saves database back to localstorage
+            localStorage.setItem('apexon_users', JSON.stringify(users));
+        }
 
         var rawFullName = liveUserData.fullName || "Valued Customer";
         var rawBalance = liveUserData.balance || "0.00";
-        var rawAccountNo = liveUserData.accountNo || "Unavailable";
+        var rawAccountNo = liveUserData.accountNo;
         var currencySign = liveUserData.currency || "$"; 
         
-        // Formatted clear values
         var formattedBalance = currencySign + parseFloat(rawBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         document.getElementById('welcomeName').innerText = "Welcome, " + rawFullName;
         document.getElementById('accountNumber').innerText = rawAccountNo;
 
-        // CHECK EYE-HIDE CONFIGURATION STATE FOR THE MAIN BALANCE DISPLAY
         if (config.hideBalance === true) {
             document.getElementById('accountBalance').innerText = "••••••";
         } else {
             document.getElementById('accountBalance').innerText = formattedBalance;
         }
 
-        // DYNAMIC TRANSACTION LEDGER ENGINE
         var ledgerContainer = document.getElementById('ledgerContainer');
         var transactions = liveUserData.transactions || [];
 
@@ -385,7 +388,6 @@
                 var isCredit = tx.type.toLowerCase() === 'credit' || tx.type.toLowerCase() === 'deposit';
                 var txStatus = tx.status || "Successful";
                 
-                // Color formatting configurations mapping
                 var amtColor = "var(--text-dark-override)"; 
                 var prefix = "";
                 var badgeBg = "rgba(100, 116, 139, 0.1)";
@@ -408,7 +410,6 @@
                     badgeText = "#f57f17";
                 }
 
-                // Check Eye-Hide configurations specifically for individual transaction ledger list values
                 var txAmountDisplay = prefix + currencySign + parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 if (config.hideBalance === true) {
                     txAmountDisplay = prefix + "••••••";
@@ -423,8 +424,6 @@
                             <p style="font-size: 13px; font-weight: 600; color: var(--text-dark-override);">${tx.description || (isCredit ? "Funds Received" : "Transfer Out")}</p>
                             <p style="font-size: 11px; color: var(--text-sub); margin-top: 2px;">${partnerLabel}</p>
                             <p style="font-size: 10px; color: var(--text-sub); margin-top: 1px;">${txTimestamp}</p>
-                            
-                            <!-- WRITTEN NOTE REJECTION WARNING BANNER INJECTION -->
                             ${txStatus === 'Rejected' && tx.rejectionReason ? `
                                 <div style="margin-top: 8px; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; border-radius: 4px;">
                                     <p style="color: #ef4444; font-size: 11px; font-weight: 600; line-height: 1.4;">
